@@ -45,6 +45,7 @@ export const navBarConfig: NavBarConfig = {
 		LinkPreset.Archive,
 		LinkPreset.About,
 		{ name: "作品集", url: "/portfolio/" },
+		{ name: "知识花园", url: "/garden/" },
 		{
 			name: "GitHub",
 			url: "https://github.com/WMM321", // Internal links should not include the base path, as it is automatically added

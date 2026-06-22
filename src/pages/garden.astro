@@ -1,0 +1,67 @@
+---
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { getSortedPostsList } from "@utils/content-utils";
+import { getTagList } from "@utils/content-utils";
+import { getCategoryList } from "@utils/content-utils";
+
+const title = "知识花园";
+const description = "我的学习笔记和知识体系";
+
+// 获取所有文章
+const posts = await getSortedPostsList();
+
+// 按分类组织文章
+const categories = posts.reduce((acc, post) => {
+  const cat = post.data.category || "未分类";
+  if (!acc[cat]) acc[cat] = [];
+  acc[cat].push(post);
+  return acc;
+}, {} as Record<string, typeof posts>);
+
+// 获取所有标签
+const tags = await getTagList();
+---
+
+<MainGridLayout title={title} description={description}>
+  <div class="card-base p-6 mb-4">
+    <h1 class="text-2xl font-bold mb-4">知识花园</h1>
+    <p class="text-neutral-500 mb-6">我的学习笔记和知识体系，按主题组织</p>
+
+    <!-- 标签云 -->
+    <div class="mb-8">
+      <h2 class="text-lg font-bold mb-3">标签</h2>
+      <div class="flex flex-wrap gap-2">
+        {tags.map(tag => (
+          <a href={`/tags/${tag.name}/`} class="badge-outline hover:opacity-80 transition-opacity">
+            {tag.name} ({tag.count})
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- 按分类展示文章 -->
+    {Object.entries(categories).map(([category, categoryPosts]) => (
+      <div class="mb-8">
+        <h2 class="text-lg font-bold mb-3">{category}</h2>
+        <div class="grid grid-cols-1 gap-3">
+          {categoryPosts.map(post => (
+            <a href={`/posts/${post.slug}/`} class="border border-black/10 dark:border-white/10 rounded-lg p-4 hover:shadow-md transition-shadow">
+              <h3 class="font-bold mb-1">{post.data.title}</h3>
+              <p class="text-sm text-neutral-500 mb-2">{post.data.description}</p>
+              <div class="flex flex-wrap gap-2">
+                {(post.data.tags || []).map(tag => (
+                  <span class="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <time class="text-xs text-neutral-400 mt-2 block">
+                {post.data.published.toLocaleDateString('zh-CN')}
+              </time>
+            </a>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+</MainGridLayout>
