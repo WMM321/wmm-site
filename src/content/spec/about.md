@@ -1,9 +1,13 @@
-# About
-This is the demo site for [Fuwari](https://github.com/saicaca/fuwari).
+# 关于我
 
-::github{repo="saicaca/fuwari"}
+你好，我是 WMM，一名 AI 协同开发实践者。
 
-> ### Sources of images used in this site
-> - [Unsplash](https://unsplash.com/)
-> - [星と少女](https://www.pixiv.net/artworks/108916539) by [Stella](https://www.pixiv.net/users/93273965)
-> - [Rabbit - v1.4 Showcase](https://civitai.com/posts/586908) by [Rabbit_YourMajesty](https://civitai.com/user/Rabbit_YourMajesty)
+## 方向
+
+- **AI 协同开发** — 探索 Claude Code / ECC 等 AI 工具在实际开发中的最佳实践
+- **学习笔记** — 记录技术学习过程，涵盖嵌入式、ROS、数据分析等方向
+- **作品展示** — 汇总个人项目与实验成果
+
+## 联系
+
+- [GitHub](https://github.com/WMM321)
