@@ -12,6 +12,12 @@ const postsCollection = defineCollection({
 		category: z.string().optional().nullable().default(""),
 		lang: z.string().optional().default(""),
 
+		/* 来源信息 */
+		source_type: z.enum(["original", "curated", "translated"]).optional().default("original"),
+		source_url: z.string().optional().default(""),
+		source_author: z.string().optional().default(""),
+		source_platform: z.string().optional().default(""),
+
 		/* For internal use */
 		prevTitle: z.string().default(""),
 		prevSlug: z.string().default(""),

@@ -6,6 +6,10 @@ image: ""
 tags: ["Astro", "前端", "教程"]
 category: "技术"
 draft: false
+source_type: "curated"
+source_url: "https://docs.astro.build"
+source_author: "Astro 官方"
+source_platform: "Astro Docs"
 ---
 
 # Astro 框架入门指南

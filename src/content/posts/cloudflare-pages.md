@@ -6,6 +6,10 @@ image: ""
 tags: ["Cloudflare", "部署", "CI/CD"]
 category: "技术"
 draft: false
+source_type: "curated"
+source_url: "https://developers.cloudflare.com/pages/"
+source_author: "Cloudflare"
+source_platform: "Cloudflare Docs"
 ---
 
 # 使用 Cloudflare Pages 部署静态网站

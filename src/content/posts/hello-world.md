@@ -6,6 +6,7 @@ image: ""
 tags: ["博客", "Astro"]
 category: "技术"
 draft: false
+source_type: "original"
 ---
 
 # Hello World - 我的个人网站上线了

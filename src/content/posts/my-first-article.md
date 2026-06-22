@@ -6,6 +6,7 @@ image: ""
 tags: ["AI", "学习", "Astro"]
 category: "技术"
 draft: false
+source_type: "original"
 ---
 
 # 我的 AI 协同开发之旅

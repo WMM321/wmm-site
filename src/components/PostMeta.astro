@@ -13,6 +13,10 @@ interface Props {
 	category: string | null;
 	hideTagsForMobile?: boolean;
 	hideUpdateDate?: boolean;
+	source_type?: string;
+	source_url?: string;
+	source_author?: string;
+	source_platform?: string;
 }
 const {
 	published,
@@ -21,6 +25,10 @@ const {
 	category,
 	hideTagsForMobile = false,
 	hideUpdateDate = false,
+	source_type = "original",
+	source_url = "",
+	source_author = "",
+	source_platform = "",
 } = Astro.props;
 const className = Astro.props.class;
 ---
@@ -79,4 +87,23 @@ const className = Astro.props.class;
             {!(tags && tags.length > 0) && <div class="transition text-50 text-sm font-medium">{i18n(I18nKey.noTags)}</div>}
         </div>
     </div>
+
+    <!-- source info -->
+    {source_type && source_type !== "original" && (
+        <div class="flex items-center">
+            <div class="meta-icon">
+                <Icon name="material-symbols:link-rounded" class="text-xl"></Icon>
+            </div>
+            <span class="text-50 text-sm font-medium">
+                {source_type === "curated" ? "整理自" : "翻译自"}{" "}
+                {source_url ? (
+                    <a href={source_url} target="_blank" rel="noopener" class="hover:text-[var(--primary)]">
+                        {source_author || source_platform || "来源"}
+                    </a>
+                ) : (
+                    source_author || source_platform || "来源"
+                )}
+            </span>
+        </div>
+    )}
 </div>
