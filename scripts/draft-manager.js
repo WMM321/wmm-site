@@ -223,9 +223,62 @@ function createDraft(title) {
   console.log(`  4. 完成后运行：node scripts/draft-manager.js publish "${filename}"`);
 }
 
+// 预览草稿（同步版本）
 function previewDraft(filename) {
+  // 1. 安全路径校验
   assertSafePath(filename);
-  throw new Error('preview 命令尚未实现（TODO）');
+
+  const draftPath = path.join(DRAFTS_FOLDER, filename);
+  const postPath = path.join(POSTS_FOLDER, filename);
+
+  let filepath;
+  let location;
+
+  if (fileExists(draftPath)) {
+    filepath = draftPath;
+    location = '草稿箱';
+  } else if (fileExists(postPath)) {
+    filepath = postPath;
+    location = '已发布';
+  } else {
+    console.error(`错误：文件不存在：${filename}`);
+    process.exit(1);
+  }
+
+  // 2. 读取文件内容
+  const content = fs.readFileSync(filepath, 'utf-8');
+  const { data, body } = parseFrontmatter(content);
+
+  // 3. 验证 frontmatter
+  const validation = validateFrontmatter(data);
+
+  // 4. 统计信息
+  const wordCount = body.trim().split(/\s+/).length;
+  const charCount = body.length;
+
+  // 5. 显示预览信息
+  console.log(`\n📄 文件预览：${filename}`);
+  console.log(`📁 位置：${location}`);
+  console.log(`\n--- Frontmatter ---`);
+  console.log(`标题：${data.title || '(未设置)'}`);
+  console.log(`发布日期：${data.published || '(未设置)'}`);
+  console.log(`描述：${data.description || '(未设置)'}`);
+  console.log(`标签：${Array.isArray(data.tags) ? data.tags.join(', ') : '(未设置)'}`);
+  console.log(`分类：${data.category || '(未设置)'}`);
+  console.log(`草稿状态：${data.draft ? '是' : '否'}`);
+  console.log(`来源类型：${data.source_type || 'original'}`);
+
+  if (!validation.valid) {
+    console.log(`\n⚠️  缺少必填字段：${validation.missing.join(', ')}`);
+  } else {
+    console.log(`\n✅ Frontmatter 验证通过`);
+  }
+
+  console.log(`\n--- 统计信息 ---`);
+  console.log(`字数：${wordCount}`);
+  console.log(`字符数：${charCount}`);
+  console.log(`\n--- 正文预览 ---`);
+  console.log(body.substring(0, 500) + (body.length > 500 ? '...' : ''));
 }
 
 function publishDraft(filename) {
