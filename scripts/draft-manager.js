@@ -28,7 +28,9 @@ function assertSafePath(userInput, baseFolder) {
 
 // Frontmatter 解析 - 零外部依赖
 export function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  // Strip BOM (Windows editors like Obsidian add ﻿ to UTF-8 files)
+  const clean = content.charCodeAt(0) === 0xFEFF ? content.slice(1) : content;
+  const match = clean.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) {
     return { data: {}, body: content };
   }
@@ -349,11 +351,18 @@ function publishDraft(filename) {
   } catch (error) {
     console.error(`❌ 发布失败：${error.message}`);
 
-    // 只有在目标文件已写入且源文件仍存在时才回滚
-    if (targetWritten && fileExists(draftPath)) {
+    // 只有在目标文件已写入时才回滚
+    if (targetWritten) {
       try {
-        fs.unlinkSync(targetPath);
-        console.log('↩️  已回滚操作');
+        // 如果源文件仍存在，删除目标文件
+        if (fileExists(draftPath)) {
+          fs.unlinkSync(targetPath);
+          console.log('↩️  已回滚操作');
+        } else {
+          // 源文件已删除但操作失败，提示用户手动处理
+          console.warn(`⚠️  源文件已删除但操作未完成`);
+          console.warn(`目标文件可能需要手动处理：${targetPath}`);
+        }
       } catch (rollbackError) {
         console.error(`⚠️  回滚失败：${rollbackError.message}`);
         console.error(`目标文件可能需要手动删除：${targetPath}`);
@@ -421,11 +430,18 @@ function unpublishDraft(filename) {
   } catch (error) {
     console.error(`❌ 取消发布失败：${error.message}`);
 
-    // 只有在目标文件已写入且源文件仍存在时才回滚
-    if (targetWritten && fileExists(postPath)) {
+    // 只有在目标文件已写入时才回滚
+    if (targetWritten) {
       try {
-        fs.unlinkSync(targetPath);
-        console.log('↩️  已回滚操作');
+        // 如果源文件仍存在，删除目标文件
+        if (fileExists(postPath)) {
+          fs.unlinkSync(targetPath);
+          console.log('↩️  已回滚操作');
+        } else {
+          // 源文件已删除但操作失败，提示用户手动处理
+          console.warn(`⚠️  源文件已删除但操作未完成`);
+          console.warn(`草稿文件可能需要手动处理：${targetPath}`);
+        }
       } catch (rollbackError) {
         console.error(`⚠️  回滚失败：${rollbackError.message}`);
         console.error(`草稿文件可能需要手动删除：${targetPath}`);
