@@ -363,9 +363,76 @@ function publishDraft(filename) {
   }
 }
 
+// 取消发布 - 原子性操作（同步版本）
 function unpublishDraft(filename) {
+  // 1. 安全路径校验
   assertSafePath(filename);
-  throw new Error('unpublish 命令尚未实现（TODO）');
+  const postPath = path.join(POSTS_FOLDER, filename);
+  const targetPath = path.join(DRAFTS_FOLDER, filename);
+
+  let targetWritten = false;
+
+  try {
+    // 2. 检查源文件是否存在
+    if (!fileExists(postPath)) {
+      console.error(`错误：已发布文件不存在：${filename}`);
+      process.exit(1);
+    }
+
+    // 3. 读取已发布文件
+    const content = fs.readFileSync(postPath, 'utf-8');
+    const { data, body } = parseFrontmatter(content);
+
+    // 4. 修改 draft 状态
+    data.draft = true;
+
+    // 5. 生成新内容
+    const newContent = generateFrontmatter(data, body);
+
+    // 6. 确保草稿箱目录存在
+    ensureDir(DRAFTS_FOLDER);
+
+    // 7. 检查目标文件是否已存在
+    if (fileExists(targetPath)) {
+      console.error(`错误：草稿箱中已存在同名文件：${filename}`);
+      console.error('请先处理草稿箱中的文件');
+      process.exit(1);
+    }
+
+    // 8. 写入草稿箱（先 modify）
+    fs.writeFileSync(targetPath, newContent, 'utf-8');
+    targetWritten = true;
+
+    // 9. 验证写入成功
+    const verifyContent = fs.readFileSync(targetPath, 'utf-8');
+    if (verifyContent !== newContent) {
+      throw new Error('文件写入验证失败');
+    }
+
+    // 10. 删除源文件（后 delete）
+    fs.unlinkSync(postPath);
+
+    // 11. 显示成功信息
+    console.log(`✅ 已取消发布：${data.title}`);
+    console.log(`📁 位置：${targetPath}`);
+    console.log(`\n文章已移回草稿箱，可以继续编辑`);
+
+  } catch (error) {
+    console.error(`❌ 取消发布失败：${error.message}`);
+
+    // 只有在目标文件已写入且源文件仍存在时才回滚
+    if (targetWritten && fileExists(postPath)) {
+      try {
+        fs.unlinkSync(targetPath);
+        console.log('↩️  已回滚操作');
+      } catch (rollbackError) {
+        console.error(`⚠️  回滚失败：${rollbackError.message}`);
+        console.error(`草稿文件可能需要手动删除：${targetPath}`);
+      }
+    }
+
+    process.exit(1);
+  }
 }
 
 function listDrafts() {
