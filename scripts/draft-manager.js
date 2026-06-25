@@ -281,9 +281,79 @@ function previewDraft(filename) {
   console.log(body.substring(0, 500) + (body.length > 500 ? '...' : ''));
 }
 
+// 发布草稿 - 原子性操作（同步版本）
 function publishDraft(filename) {
+  // 1. 安全路径校验
   assertSafePath(filename);
-  throw new Error('publish 命令尚未实现（TODO）');
+  const draftPath = path.join(DRAFTS_FOLDER, filename);
+  const targetPath = path.join(POSTS_FOLDER, filename);
+
+  try {
+    // 2. 检查源文件是否存在
+    if (!fileExists(draftPath)) {
+      console.error(`错误：草稿文件不存在：${filename}`);
+      process.exit(1);
+    }
+
+    // 3. 读取草稿文件
+    const content = fs.readFileSync(draftPath, 'utf-8');
+    const { data, body } = parseFrontmatter(content);
+
+    // 4. 修改 draft 状态
+    data.draft = false;
+
+    // 5. 验证必填字段
+    const validation = validateFrontmatter(data);
+    if (!validation.valid) {
+      console.error(`错误：缺少必填字段：${validation.missing.join(', ')}`);
+      console.error('请先完善 frontmatter 再发布');
+      process.exit(1);
+    }
+
+    // 6. 生成新内容
+    const newContent = generateFrontmatter(data, body);
+
+    // 7. 确保 posts 目录存在
+    ensureDir(POSTS_FOLDER);
+
+    // 8. 检查目标文件是否已存在
+    if (fileExists(targetPath)) {
+      console.error(`错误：目标文件已存在：${filename}`);
+      console.error('如果要覆盖，请先手动删除目标文件');
+      process.exit(1);
+    }
+
+    // 9. 写入目标文件（先 modify）
+    fs.writeFileSync(targetPath, newContent, 'utf-8');
+
+    // 10. 验证写入成功
+    const verifyContent = fs.readFileSync(targetPath, 'utf-8');
+    if (verifyContent !== newContent) {
+      throw new Error('文件写入验证失败');
+    }
+
+    // 11. 删除源文件（后 delete）
+    fs.unlinkSync(draftPath);
+
+    // 12. 显示成功信息
+    console.log(`✅ 文章已发布：${data.title}`);
+    console.log(`📁 位置：${targetPath}`);
+    console.log(`\n下一步：`);
+    console.log(`  1. 运行 pnpm run build 验证构建`);
+    console.log(`  2. 运行 git add . && git commit -m "feat: 添加文章 ${filename}"`);
+    console.log(`  3. 运行 git push origin master 推送到远程`);
+
+  } catch (error) {
+    console.error(`❌ 发布失败：${error.message}`);
+
+    // 如果目标文件已写入但源文件未删除，尝试回滚
+    if (fileExists(targetPath) && fileExists(draftPath)) {
+      fs.unlinkSync(targetPath);
+      console.log('↩️  已回滚操作');
+    }
+
+    process.exit(1);
+  }
 }
 
 function unpublishDraft(filename) {
