@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import fs from 'fs/promises';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -13,8 +13,17 @@ const POSTS_FOLDER = path.join(__dirname, '..', 'src', 'content', 'posts');
 // 命令行参数解析
 const args = process.argv.slice(2);
 const command = args[0];
-const filename = args[1];
-const title = args[1]; // 对于 create 命令，第二个参数是标题
+const target = args[1]; // create 时为标题，其他命令时为文件名
+
+// 路径安全校验：防止路径遍历攻击
+function assertSafePath(userInput) {
+  const resolved = path.resolve(DRAFTS_FOLDER, userInput);
+  if (!resolved.startsWith(path.resolve(DRAFTS_FOLDER)) &&
+      !resolved.startsWith(path.resolve(POSTS_FOLDER))) {
+    throw new Error(`不安全的路径: ${userInput}（路径遍历被拒绝）`);
+  }
+  return resolved;
+}
 
 // 显示帮助信息
 function showHelp() {
@@ -40,8 +49,38 @@ function showHelp() {
   `);
 }
 
+// --- 以下为待实现的命令函数 ---
+
+function createDraft(title) {
+  throw new Error('create 命令尚未实现（TODO）');
+}
+
+function previewDraft(filename) {
+  assertSafePath(filename);
+  throw new Error('preview 命令尚未实现（TODO）');
+}
+
+function publishDraft(filename) {
+  assertSafePath(filename);
+  throw new Error('publish 命令尚未实现（TODO）');
+}
+
+function unpublishDraft(filename) {
+  assertSafePath(filename);
+  throw new Error('unpublish 命令尚未实现（TODO）');
+}
+
+function listDrafts() {
+  throw new Error('list 命令尚未实现（TODO）');
+}
+
+function showStatus(filename) {
+  assertSafePath(filename);
+  throw new Error('status 命令尚未实现（TODO）');
+}
+
 // 主函数
-async function main() {
+function main() {
   if (!command || command === 'help') {
     showHelp();
     return;
@@ -50,47 +89,47 @@ async function main() {
   try {
     switch (command) {
       case 'create':
-        if (!title) {
+        if (!target) {
           console.error('错误：请提供文章标题');
           process.exit(1);
         }
-        await createDraft(title);
+        createDraft(target);
         break;
 
       case 'preview':
-        if (!filename) {
+        if (!target) {
           console.error('错误：请提供文件名');
           process.exit(1);
         }
-        await previewDraft(filename);
+        previewDraft(target);
         break;
 
       case 'publish':
-        if (!filename) {
+        if (!target) {
           console.error('错误：请提供文件名');
           process.exit(1);
         }
-        await publishDraft(filename);
+        publishDraft(target);
         break;
 
       case 'unpublish':
-        if (!filename) {
+        if (!target) {
           console.error('错误：请提供文件名');
           process.exit(1);
         }
-        await unpublishDraft(filename);
+        unpublishDraft(target);
         break;
 
       case 'list':
-        await listDrafts();
+        listDrafts();
         break;
 
       case 'status':
-        if (!filename) {
+        if (!target) {
           console.error('错误：请提供文件名');
           process.exit(1);
         }
-        await showStatus(filename);
+        showStatus(target);
         break;
 
       default:
