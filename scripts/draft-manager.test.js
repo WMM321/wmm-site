@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { parseFrontmatter, generateFrontmatter, fileExists, generateFilename, validateFrontmatter } from './draft-manager.js';
+import { parseFrontmatter, generateFrontmatter, fileExists, generateFilename, validateFrontmatter, ensureDir } from './draft-manager.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -111,5 +111,19 @@ describe('文件操作工具函数', () => {
     expect(validation.missing).toContain('description');
     expect(validation.missing).toContain('tags');
     expect(validation.missing).toContain('category');
+  });
+
+  test('ensureDir - 目录不存在时创建', () => {
+    const newDir = path.join(testDir, 'new-folder', 'sub-folder');
+    ensureDir(newDir);
+    expect(fs.existsSync(newDir)).toBe(true);
+  });
+
+  test('ensureDir - 目录已存在时不报错', () => {
+    const existingDir = path.join(testDir, 'existing-folder');
+    fs.mkdirSync(existingDir);
+    // 不应抛出异常
+    expect(() => ensureDir(existingDir)).not.toThrow();
+    expect(fs.existsSync(existingDir)).toBe(true);
   });
 });
