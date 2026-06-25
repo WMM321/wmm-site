@@ -176,8 +176,51 @@ function showHelp() {
 
 // --- 以下为待实现的命令函数 ---
 
+// 创建草稿（同步版本，与项目风格一致）
 function createDraft(title) {
-  throw new Error('create 命令尚未实现（TODO）');
+  // 1. 确保草稿箱目录存在
+  ensureDir(DRAFTS_FOLDER);
+
+  // 2. 生成文件名
+  const filename = generateFilename(title);
+  const filepath = path.join(DRAFTS_FOLDER, filename);
+
+  // 3. 检查文件是否已存在
+  if (fileExists(filepath)) {
+    console.error(`错误：草稿已存在：${filename}`);
+    process.exit(1);
+  }
+
+  // 4. 创建 frontmatter 模板
+  const today = new Date().toISOString().split('T')[0];
+  const data = {
+    title: title,
+    published: today,
+    description: '',
+    image: '',
+    tags: [],
+    category: '',
+    draft: true,
+    source_type: 'original',
+    source_url: '',
+    source_author: '',
+    source_platform: ''
+  };
+
+  const body = '\n\n在此处开始写作...\n';
+  const content = generateFrontmatter(data, body);
+
+  // 5. 写入文件
+  fs.writeFileSync(filepath, content, 'utf-8');
+
+  // 6. 显示成功信息
+  console.log(`✅ 草稿已创建：${filename}`);
+  console.log(`📁 位置：${filepath}`);
+  console.log(`\n下一步：`);
+  console.log(`  1. 在 Obsidian 中打开文件`);
+  console.log(`  2. 编辑 frontmatter（标题、描述、标签等）`);
+  console.log(`  3. 开始写作`);
+  console.log(`  4. 完成后运行：node scripts/draft-manager.js publish "${filename}"`);
 }
 
 function previewDraft(filename) {
