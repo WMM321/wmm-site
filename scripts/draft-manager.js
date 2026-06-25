@@ -435,13 +435,135 @@ function unpublishDraft(filename) {
   }
 }
 
+// 列出所有草稿（同步版本）
 function listDrafts() {
-  throw new Error('list 命令尚未实现（TODO）');
+  console.log('\n📋 草稿箱列表：\n');
+
+  // 1. 读取草稿箱目录
+  let draftFiles = [];
+  try {
+    const files = fs.readdirSync(DRAFTS_FOLDER);
+    draftFiles = files.filter(f => f.endsWith('.md') && f !== '.gitkeep');
+  } catch (error) {
+    console.log('草稿箱目录为空或不存在');
+  }
+
+  // 2. 读取 posts 目录中的草稿（draft: true）
+  let draftPosts = [];
+  try {
+    const files = fs.readdirSync(POSTS_FOLDER);
+    const postFiles = files.filter(f => f.endsWith('.md'));
+
+    for (const file of postFiles) {
+      const filepath = path.join(POSTS_FOLDER, file);
+      const content = fs.readFileSync(filepath, 'utf-8');
+      const { data } = parseFrontmatter(content);
+      if (data.draft === true) {
+        draftPosts.push({ file, title: data.title || '(无标题)' });
+      }
+    }
+  } catch (error) {
+    // posts 目录可能不存在，忽略
+  }
+
+  // 3. 显示草稿箱中的文件
+  if (draftFiles.length > 0) {
+    console.log('📁 草稿箱：');
+    for (const file of draftFiles) {
+      const filepath = path.join(DRAFTS_FOLDER, file);
+      const content = fs.readFileSync(filepath, 'utf-8');
+      const { data } = parseFrontmatter(content);
+      const title = data.title || '(无标题)';
+      console.log(`  📝 ${file} - ${title}`);
+    }
+    console.log('');
+  }
+
+  // 4. 显示 posts 目录中的草稿
+  if (draftPosts.length > 0) {
+    console.log('📝 已发布但标记为草稿：');
+    for (const { file, title } of draftPosts) {
+      console.log(`  📄 ${file} - ${title}`);
+    }
+    console.log('');
+  }
+
+  // 5. 显示统计信息
+  console.log(`\n📊 统计：`);
+  console.log(`  草稿箱中：${draftFiles.length} 个文件`);
+  console.log(`  已发布草稿：${draftPosts.length} 个文件`);
+  console.log(`  总计：${draftFiles.length + draftPosts.length} 个草稿`);
+
+  if (draftFiles.length === 0 && draftPosts.length === 0) {
+    console.log('\n✨ 暂无草稿');
+    console.log('运行 node scripts/draft-manager.js create "文章标题" 创建新草稿');
+  }
 }
 
+// 显示单个草稿状态（同步版本）
 function showStatus(filename) {
+  // 1. 安全路径校验
   assertSafePath(filename);
-  throw new Error('status 命令尚未实现（TODO）');
+
+  const draftPath = path.join(DRAFTS_FOLDER, filename);
+  const postPath = path.join(POSTS_FOLDER, filename);
+
+  let filepath;
+  let location;
+  let status;
+
+  if (fileExists(draftPath)) {
+    filepath = draftPath;
+    location = '草稿箱';
+    status = '草稿';
+  } else if (fileExists(postPath)) {
+    filepath = postPath;
+    location = '已发布';
+    status = '已发布';
+  } else {
+    console.error(`错误：文件不存在：${filename}`);
+    process.exit(1);
+  }
+
+  // 2. 读取文件内容
+  const content = fs.readFileSync(filepath, 'utf-8');
+  const { data, body } = parseFrontmatter(content);
+
+  // 3. 验证 frontmatter
+  const validation = validateFrontmatter(data);
+
+  // 4. 统计信息
+  const wordCount = body.trim().split(/\s+/).length;
+  const charCount = body.length;
+  const lineCount = body.split('\n').length;
+
+  // 5. 显示状态信息
+  console.log(`\n📊 文件状态：${filename}`);
+  console.log(`\n--- 基本信息 ---`);
+  console.log(`位置：${location}`);
+  console.log(`状态：${status}`);
+  console.log(`标题：${data.title || '(未设置)'}`);
+  console.log(`发布日期：${data.published || '(未设置)'}`);
+  console.log(`描述：${data.description || '(未设置)'}`);
+  console.log(`标签：${Array.isArray(data.tags) ? data.tags.join(', ') : '(未设置)'}`);
+  console.log(`分类：${data.category || '(未设置)'}`);
+  console.log(`来源类型：${data.source_type || 'original'}`);
+
+  console.log(`\n--- 验证状态 ---`);
+  if (!validation.valid) {
+    console.log(`⚠️  缺少必填字段：${validation.missing.join(', ')}`);
+    console.log(`\n建议：发布前请先完善这些字段`);
+  } else {
+    console.log(`✅ Frontmatter 验证通过`);
+    if (status === '草稿') {
+      console.log(`\n可以发布：node scripts/draft-manager.js publish "${filename}"`);
+    }
+  }
+
+  console.log(`\n--- 统计信息 ---`);
+  console.log(`字数：${wordCount}`);
+  console.log(`字符数：${charCount}`);
+  console.log(`行数：${lineCount}`);
 }
 
 // 主函数
