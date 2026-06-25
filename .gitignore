@@ -32,3 +32,7 @@ yarn.lock
 
 # Obsidian
 .obsidian/
+
+# 草稿箱机制
+草稿箱/*.md
+!草稿箱/.gitkeep
