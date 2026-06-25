@@ -288,6 +288,7 @@ function publishDraft(filename) {
   const draftPath = path.join(DRAFTS_FOLDER, filename);
   const targetPath = path.join(POSTS_FOLDER, filename);
 
+  let targetWritten = false;
   try {
     // 2. 检查源文件是否存在
     if (!fileExists(draftPath)) {
@@ -325,6 +326,7 @@ function publishDraft(filename) {
 
     // 9. 写入目标文件（先 modify）
     fs.writeFileSync(targetPath, newContent, 'utf-8');
+    targetWritten = true;
 
     // 10. 验证写入成功
     const verifyContent = fs.readFileSync(targetPath, 'utf-8');
@@ -346,10 +348,15 @@ function publishDraft(filename) {
   } catch (error) {
     console.error(`❌ 发布失败：${error.message}`);
 
-    // 如果目标文件已写入但源文件未删除，尝试回滚
-    if (fileExists(targetPath) && fileExists(draftPath)) {
-      fs.unlinkSync(targetPath);
-      console.log('↩️  已回滚操作');
+    // 只有在目标文件已写入且源文件仍存在时才回滚
+    if (targetWritten && fileExists(draftPath)) {
+      try {
+        fs.unlinkSync(targetPath);
+        console.log('↩️  已回滚操作');
+      } catch (rollbackError) {
+        console.error(`⚠️  回滚失败：${rollbackError.message}`);
+        console.error(`目标文件可能需要手动删除：${targetPath}`);
+      }
     }
 
     process.exit(1);
