@@ -8,7 +8,7 @@
 node scripts/draft-manager.js create "文章标题"
 ```
 
-或者使用 npm 脚本：
+或者使用 pnpm 脚本：
 
 ```bash
 pnpm run draft:create "文章标题"
@@ -30,6 +30,12 @@ node scripts/draft-manager.js preview "文件名.md"
 node scripts/draft-manager.js publish "文件名.md"
 ```
 
+或者使用 pnpm 脚本：
+
+```bash
+pnpm run draft:publish "文件名.md"
+```
+
 ### 5. 取消发布
 
 ```bash
@@ -41,6 +47,21 @@ node scripts/draft-manager.js unpublish "文件名.md"
 ```bash
 node scripts/draft-manager.js list
 ```
+
+或者使用 pnpm 脚本：
+
+```bash
+pnpm run draft:list
+```
+
+## pnpm 脚本快捷命令
+
+| 命令 | 说明 |
+|------|------|
+| `pnpm run draft` | 显示帮助信息 |
+| `pnpm run draft:create "标题"` | 创建新草稿 |
+| `pnpm run draft:publish "文件名"` | 发布草稿 |
+| `pnpm run draft:list` | 列出所有草稿 |
 
 ## 命令列表
 
