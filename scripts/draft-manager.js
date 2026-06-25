@@ -16,8 +16,9 @@ const command = args[0];
 const target = args[1]; // create 时为标题，其他命令时为文件名
 
 // 路径安全校验：防止路径遍历攻击
-function assertSafePath(userInput) {
-  const resolved = path.resolve(DRAFTS_FOLDER, userInput);
+function assertSafePath(userInput, baseFolder) {
+  const base = baseFolder || DRAFTS_FOLDER;
+  const resolved = path.resolve(base, userInput);
   if (!resolved.startsWith(path.resolve(DRAFTS_FOLDER)) &&
       !resolved.startsWith(path.resolve(POSTS_FOLDER))) {
     throw new Error(`不安全的路径: ${userInput}（路径遍历被拒绝）`);
@@ -439,11 +440,28 @@ function unpublishDraft(filename) {
 function listDrafts() {
   console.log('\n📋 草稿箱列表：\n');
 
-  // 1. 读取草稿箱目录
+  // 1. 读取草稿箱目录（支持扁平和文件夹格式）
   let draftFiles = [];
   try {
-    const files = fs.readdirSync(DRAFTS_FOLDER);
-    draftFiles = files.filter(f => f.endsWith('.md') && f !== '.gitkeep');
+    const items = fs.readdirSync(DRAFTS_FOLDER);
+
+    for (const item of items) {
+      if (item === '.gitkeep') continue;
+
+      const fullPath = path.join(DRAFTS_FOLDER, item);
+      const stat = fs.statSync(fullPath);
+
+      if (stat.isFile() && item.endsWith('.md')) {
+        // 扁平格式的 .md 文件
+        draftFiles.push(item);
+      } else if (stat.isDirectory()) {
+        // 文件夹格式：检查 index.md
+        const indexPath = path.join(fullPath, 'index.md');
+        if (fileExists(indexPath)) {
+          draftFiles.push(path.join(item, 'index.md'));
+        }
+      }
+    }
   } catch (error) {
     console.log('草稿箱目录为空或不存在');
   }
@@ -451,15 +469,34 @@ function listDrafts() {
   // 2. 读取 posts 目录中的草稿（draft: true）
   let draftPosts = [];
   try {
-    const files = fs.readdirSync(POSTS_FOLDER);
-    const postFiles = files.filter(f => f.endsWith('.md'));
+    const items = fs.readdirSync(POSTS_FOLDER);
 
-    for (const file of postFiles) {
-      const filepath = path.join(POSTS_FOLDER, file);
+    for (const item of items) {
+      const fullPath = path.join(POSTS_FOLDER, item);
+      const stat = fs.statSync(fullPath);
+
+      let filepath;
+      let displayPath;
+
+      if (stat.isFile() && item.endsWith('.md')) {
+        filepath = fullPath;
+        displayPath = item;
+      } else if (stat.isDirectory()) {
+        const indexPath = path.join(fullPath, 'index.md');
+        if (fileExists(indexPath)) {
+          filepath = indexPath;
+          displayPath = path.join(item, 'index.md');
+        } else {
+          continue;
+        }
+      } else {
+        continue;
+      }
+
       const content = fs.readFileSync(filepath, 'utf-8');
       const { data } = parseFrontmatter(content);
       if (data.draft === true) {
-        draftPosts.push({ file, title: data.title || '(无标题)' });
+        draftPosts.push({ file: displayPath, title: data.title || '(无标题)' });
       }
     }
   } catch (error) {
@@ -503,26 +540,40 @@ function listDrafts() {
 // 显示单个草稿状态（同步版本）
 function showStatus(filename) {
   // 1. 安全路径校验
-  assertSafePath(filename);
-
-  const draftPath = path.join(DRAFTS_FOLDER, filename);
-  const postPath = path.join(POSTS_FOLDER, filename);
+  const draftPath = assertSafePath(filename, DRAFTS_FOLDER);
+  const postPath = assertSafePath(filename, POSTS_FOLDER);
 
   let filepath;
   let location;
   let status;
 
-  if (fileExists(draftPath)) {
+  // 检查扁平格式（必须是文件，不是目录）
+  if (fileExists(draftPath) && fs.statSync(draftPath).isFile()) {
     filepath = draftPath;
     location = '草稿箱';
     status = '草稿';
-  } else if (fileExists(postPath)) {
+  } else if (fileExists(postPath) && fs.statSync(postPath).isFile()) {
     filepath = postPath;
     location = '已发布';
     status = '已发布';
-  } else {
-    console.error(`错误：文件不存在：${filename}`);
-    process.exit(1);
+  }
+  // 检查文件夹格式
+  else {
+    const draftIndexPath = assertSafePath(path.join(filename, 'index.md'), DRAFTS_FOLDER);
+    const postIndexPath = assertSafePath(path.join(filename, 'index.md'), POSTS_FOLDER);
+
+    if (fileExists(draftIndexPath)) {
+      filepath = draftIndexPath;
+      location = '草稿箱';
+      status = '草稿';
+    } else if (fileExists(postIndexPath)) {
+      filepath = postIndexPath;
+      location = '已发布';
+      status = '已发布';
+    } else {
+      console.error(`错误：文件不存在：${filename}`);
+      process.exit(1);
+    }
   }
 
   // 2. 读取文件内容
