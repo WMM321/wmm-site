@@ -101,6 +101,55 @@ export function generateFrontmatter(data, body) {
   return `---\n${lines.join('\n')}\n---\n${body}`;
 }
 
+// 检查文件是否存在（同步版本）
+export function fileExists(filepath) {
+  try {
+    fs.accessSync(filepath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// 确保目录存在（同步版本）
+export function ensureDir(dirpath) {
+  try {
+    fs.mkdirSync(dirpath, { recursive: true });
+  } catch (error) {
+    if (error.code !== 'EEXIST') {
+      throw error;
+    }
+  }
+}
+
+// 生成文件名
+export function generateFilename(title) {
+  const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9一-龥]+/g, '-') // 保留中文和英文数字
+    .replace(/^-+|-+$/g, ''); // 移除首尾的连字符
+
+  return `${date}-${slug}.md`;
+}
+
+// 验证 frontmatter 必填字段
+export function validateFrontmatter(data) {
+  const requiredFields = ['title', 'published', 'description', 'tags', 'category'];
+  const missing = [];
+
+  for (const field of requiredFields) {
+    if (!data[field] || (Array.isArray(data[field]) && data[field].length === 0)) {
+      missing.push(field);
+    }
+  }
+
+  return {
+    valid: missing.length === 0,
+    missing
+  };
+}
+
 // 显示帮助信息
 function showHelp() {
   console.log(`

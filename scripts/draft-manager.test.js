@@ -1,5 +1,10 @@
-import { describe, test, expect } from 'vitest';
-import { parseFrontmatter, generateFrontmatter } from './draft-manager.js';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { parseFrontmatter, generateFrontmatter, fileExists, generateFilename, validateFrontmatter } from './draft-manager.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Frontmatter 解析', () => {
   test('解析正确格式的 frontmatter', () => {
@@ -45,5 +50,66 @@ tags: ["标签1", "标签2"]
     expect(result).toContain('draft: true');
     expect(result).toContain('tags: [标签1, 标签2]');
     expect(result).toContain('正文内容');
+  });
+});
+
+describe('文件操作工具函数', () => {
+  const testDir = path.join(__dirname, 'test-temp');
+
+  beforeEach(() => {
+    fs.mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(testDir, { recursive: true, force: true });
+  });
+
+  test('fileExists - 文件存在', () => {
+    const testFile = path.join(testDir, 'test.txt');
+    fs.writeFileSync(testFile, 'test');
+
+    const exists = fileExists(testFile);
+    expect(exists).toBe(true);
+  });
+
+  test('fileExists - 文件不存在', () => {
+    const testFile = path.join(testDir, 'nonexistent.txt');
+
+    const exists = fileExists(testFile);
+    expect(exists).toBe(false);
+  });
+
+  test('generateFilename - 生成文件名', () => {
+    const filename = generateFilename('我的第一篇文章');
+
+    expect(filename).toMatch(/^\d{4}-\d{2}-\d{2}-.+\.md$/);
+    expect(filename).toContain('我的第一篇文章');
+  });
+
+  test('validateFrontmatter - 验证完整数据', () => {
+    const data = {
+      title: '测试',
+      published: '2026-06-24',
+      description: '测试描述',
+      tags: ['标签'],
+      category: '分类'
+    };
+
+    const validation = validateFrontmatter(data);
+    expect(validation.valid).toBe(true);
+    expect(validation.missing).toEqual([]);
+  });
+
+  test('validateFrontmatter - 验证缺少字段', () => {
+    const data = {
+      title: '测试',
+      published: '2026-06-24'
+    };
+
+    const validation = validateFrontmatter(data);
+    expect(validation.valid).toBe(false);
+    expect(validation.missing).toContain('description');
+    expect(validation.missing).toContain('tags');
+    expect(validation.missing).toContain('category');
   });
 });
