@@ -57,6 +57,7 @@ describe('文件操作工具函数', () => {
   const testDir = path.join(__dirname, 'test-temp');
 
   beforeEach(() => {
+    // 使用 recursive: true 确保幂等创建，兼容 Windows 环境
     fs.mkdirSync(testDir, { recursive: true });
   });
 
@@ -121,7 +122,8 @@ describe('文件操作工具函数', () => {
 
   test('ensureDir - 目录已存在时不报错', () => {
     const existingDir = path.join(testDir, 'existing-folder');
-    fs.mkdirSync(existingDir);
+    // 使用 recursive: true 幂等创建，确保不依赖 beforeEach 的清理状态
+    fs.mkdirSync(existingDir, { recursive: true });
     // 不应抛出异常
     expect(() => ensureDir(existingDir)).not.toThrow();
     expect(fs.existsSync(existingDir)).toBe(true);

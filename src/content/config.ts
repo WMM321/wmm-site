@@ -7,16 +7,16 @@ const postsCollection = defineCollection({
 		updated: z.date().optional(),
 		draft: z.boolean().optional().default(false),
 		description: z.string().optional().default(""),
-		image: z.string().optional().default(""),
+		image: z.string().optional().nullable().default(""),
 		tags: z.array(z.string()).optional().default([]),
 		category: z.string().optional().nullable().default(""),
 		lang: z.string().optional().default(""),
 
 		/* 来源信息 */
 		source_type: z.enum(["original", "curated", "translated"]).optional().default("original"),
-		source_url: z.string().optional().default(""),
-		source_author: z.string().optional().default(""),
-		source_platform: z.string().optional().default(""),
+		source_url: z.string().optional().nullable().default(""),
+		source_author: z.string().optional().nullable().default(""),
+		source_platform: z.string().optional().nullable().default(""),
 
 		/* For internal use */
 		prevTitle: z.string().default(""),
