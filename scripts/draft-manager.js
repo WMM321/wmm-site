@@ -125,15 +125,17 @@ export function ensureDir(dirpath) {
   }
 }
 
-// 生成文件名
+// 生成文件名（支持中文命名，方便审阅）
 export function generateFilename(title) {
   const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-  const slug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9一-龥]+/g, '-') // 保留中文和英文数字
-    .replace(/^-+|-+$/g, ''); // 移除首尾的连字符
+  // 清理不安全的文件名字符，保留中文、英文、数字、空格
+  const cleanTitle = title
+    .replace(/[<>:"/\\|?*]/g, '') // 移除 Windows 不安全字符
+    .replace(/\s+/g, '-') // 空格转换为连字符
+    .replace(/-+/g, '-') // 合并多个连字符
+    .replace(/^-|-$/g, ''); // 移除首尾连字符
 
-  return `${date}-${slug}.md`;
+  return `${date}-${cleanTitle}.md`;
 }
 
 // 验证 frontmatter 必填字段
