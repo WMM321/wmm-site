@@ -5,7 +5,7 @@ description: "这是我的第一篇博客文章，记录个人网站的搭建过
 image: ""
 tags: ["博客", "Astro"]
 category: "技术"
-draft: false
+draft: true
 source_type: "original"
 ---
 

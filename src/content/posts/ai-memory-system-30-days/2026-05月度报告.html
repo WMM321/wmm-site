@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude-Mem 首月使用报告</title>
+<style>
+:root {
+  --bg: #f8f9fc; --card: #fff; --border: #e2e6ee;
+  --accent: #4f46e5; --accent2: #7c3aed; --accent3: #06b6d4;
+  --green: #16a34a; --red: #dc2626; --yellow: #ca8a04;
+  --blue: #2563eb; --cyan: #0891b2; --orange: #ea580c;
+  --text: #1e293b; --muted: #64748b; --dim: #94a3b8;
+  --radius: 14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter','Noto Sans SC',system-ui,sans-serif;line-height:1.7}
+
+/* === NAV === */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;height:52px;gap:8px;overflow-x:auto;scrollbar-width:none}
+.nav-inner::-webkit-scrollbar{display:none}
+.nav-link{font-size:.75rem;font-weight:600;color:var(--muted);text-decoration:none;white-space:nowrap;padding:6px 12px;border-radius:8px;transition:all .2s}
+.nav-link:hover,.nav-link.active{color:var(--accent);background:rgba(79,70,229,.08)}
+.nav-link.active{pointer-events:none}
+
+/* === LAYOUT === */
+.page{padding:72px 20px 60px;max-width:1100px;margin:0 auto}
+.section{margin-bottom:48px;scroll-margin-top:72px}
+.section-title{font-size:1.5rem;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;display:inline-block}
+.section-desc{color:var(--muted);font-size:.85rem;margin-bottom:20px}
+
+/* === HERO === */
+.hero{text-align:center;padding:80px 0 48px;position:relative}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(79,70,229,.06),rgba(124,58,237,.04),rgba(6,182,212,.03));border-radius:0 0 40px 40px;z-index:-1}
+.hero-badge{display:inline-block;font-size:.7rem;font-weight:700;color:var(--accent);background:rgba(79,70,229,.08);padding:4px 14px;border-radius:20px;margin-bottom:16px;letter-spacing:.08em}
+.hero h1{font-size:2.8rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;line-height:1.2}
+.hero .sub{color:var(--muted);font-size:1rem;margin-bottom:32px}
+
+/* === STAT CARDS === */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:24px 0}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center;transition:transform .2s,box-shadow .2s}
+.stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.06)}
+.stat-card .num{font-size:2rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-card .label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+
+/* === CARDS === */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.card-head .icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.card-head h3{font-size:1rem;font-weight:700}
+.card-head .badge{font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:6px;margin-left:auto}
+
+/* === BAR CHART === */
+.bar-chart{display:flex;flex-direction:column;gap:3px}
+.bar-row{display:flex;align-items:center;gap:8px;font-size:.75rem}
+.bar-label{width:75px;text-align:right;color:var(--muted);flex-shrink:0;font-family:monospace}
+.bar-track{flex:1;height:22px;background:rgba(79,70,229,.06);border-radius:4px;position:relative;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s ease;display:flex;align-items:center;padding-left:6px;font-size:.65rem;font-weight:600;color:var(--text);min-width:30px}
+.bar-val{width:50px;text-align:right;font-weight:600;color:var(--text);flex-shrink:0}
+
+/* === DONUT === */
+.donut-wrap{display:flex;align-items:center;gap:32px;flex-wrap:wrap}
+.donut{width:200px;height:200px;position:relative;flex-shrink:0}
+.donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut-center .big{font-size:1.8rem;font-weight:900;color:var(--accent)}
+.donut-center .small{font-size:.7rem;color:var(--muted)}
+.donut-legend{flex:1;min-width:200px}
+.legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.8rem}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+/* === TIMELINE (4 phases) === */
+.phase-timeline{position:relative;padding-left:32px}
+.phase-timeline::before{content:'';position:absolute;left:12px;top:0;bottom:0;width:3px;background:linear-gradient(var(--accent),var(--accent2),var(--accent3),var(--green));border-radius:2px}
+.phase-node{position:relative;margin-bottom:32px}
+.phase-node::before{content:'';position:absolute;left:-26px;top:6px;width:14px;height:14px;border-radius:50%;border:3px solid var(--accent);background:var(--card);z-index:1}
+.phase-node:nth-child(2)::before{border-color:var(--accent2)}
+.phase-node:nth-child(3)::before{border-color:var(--yellow)}
+.phase-node:nth-child(4)::before{border-color:var(--green)}
+.phase-header{display:flex;align-items:center;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.phase-tag{font-size:.65rem;font-weight:700;padding:2px 10px;border-radius:6px;letter-spacing:.05em}
+.phase-name{font-size:1.1rem;font-weight:800}
+.phase-meta{color:var(--muted);font-size:.75rem}
+
+/* === TABLE === */
+.data-table{width:100%;border-collapse:collapse;font-size:.82rem;margin:12px 0}
+.data-table th{background:rgba(79,70,229,.06);color:var(--accent);font-weight:600;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)}
+.data-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.data-table tr:hover td{background:rgba(79,70,229,.02)}
+
+/* === BUG CARD === */
+.bug-card{border-left:3px solid var(--red)}
+.decision-card{border-left:3px solid var(--yellow)}
+.feature-card{border-left:3px solid var(--blue)}
+.fix-card{border-left:3px solid var(--green)}
+
+/* === GRID === */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* === FOOTER === */
+.footer{text-align:center;padding:40px 0;border-top:1px solid var(--border);margin-top:48px;color:var(--dim);font-size:.75rem}
+
+/* === RESPONSIVE === */
+@media(max-width:768px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .hero h1{font-size:2rem}
+  .donut-wrap{flex-direction:column}
+  .nav-inner{gap:4px}
+  .nav-link{font-size:.65rem;padding:4px 8px}
+}
+@media print{
+  .nav{display:none}
+  .page{padding:0}
+  .section{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#hero" class="nav-link active">概览</a>
+    <a href="#portrait" class="nav-link">数据画像</a>
+    <a href="#phases" class="nav-link">时间线</a>
+    <a href="#projects" class="nav-link">项目全景</a>
+    <a href="#decisions" class="nav-link">决策汇编</a>
+    <a href="#bugs" class="nav-link">Bug 与踩坑</a>
+    <a href="#tools" class="nav-link">工具进化</a>
+    <a href="#insights" class="nav-link">洞察</a>
+    <a href="#next" class="nav-link">下一步</a>
+  </div>
+</nav>
+
+<div class="page">
+
+<!-- ==================== HERO ==================== -->
+<div class="hero" id="hero">
+  <div class="hero-badge">CLAUDE-MEM MONTHLY REPORT</div>
+  <h1>首月使用报告</h1>
+  <div class="sub">2026.5.7 — 2026.6.7 &nbsp;|&nbsp; 30 天 &nbsp;|&nbsp; 16 个项目 &nbsp;|&nbsp; 9,623 条观察记录</div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="num">9,623</div><div class="label">观察记录</div></div>
+    <div class="stat-card"><div class="num">863</div><div class="label">会话摘要</div></div>
+    <div class="stat-card"><div class="num">1,406</div><div class="label">用户提示</div></div>
+    <div class="stat-card"><div class="num">16</div><div class="label">涉及项目</div></div>
+  </div>
+  <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="stat-card"><div class="num">30/30</div><div class="label">活跃天数</div></div>
+    <div class="stat-card"><div class="num">320.8</div><div class="label">日均观察</div></div>
+    <div class="stat-card"><div class="num">1,283</div><div class="label">峰值日 (5/10)</div></div>
+  </div>
+</div>
+
+<!-- ==================== PORTRAIT ==================== -->
+<div class="section" id="portrait">
+  <div class="section-title">月度数据画像</div>
+  <div class="section-desc">30 天活跃记录的全貌——从宏观趋势到微观时段</div>
+
+  <!-- Daily Activity Bar Chart -->
+  <div class="card">
+    <div class="card-head">
+      <div class="icon" style="background:rgba(79,70,229,.1)">&#128202;</div>
+      <h3>每日活跃度</h3>
+      <span class="badge" style="background:rgba(79,70,229,.08);color:var(--accent)">30 天</span>
+    </div>
+    <div class="bar-chart">
+      <div class="bar-row"><span class="bar-label">5/07</span><div class="bar-track"><div class="bar-fill" style="width:14.6%;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)">188</div></div><span class="bar-val">188</span></div>
+      <div class="bar-row"><span class="bar-label">5/08</span><div class="bar-track"><div class="bar-fill" style="width:11.1%;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)">142</div></div><span class="bar-val">142</span></div>
+      <div class="bar-row"><span class="bar-label">5/09</span><div class="bar-track"><div class="bar-fill" style="width:77%;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)">988</div></div><span class="bar-val">988</span></div>
+      <div class="bar-row"><span class="bar-label" style="font-weight:700;color:var(--accent)">5/10</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))">1,283</div></div><span class="bar-val" style="color:var(--accent);font-weight:700">1,283</span></div>
+      <div class="bar-row"><span class="bar-label">5/11</span><div class="bar-track"><div class="bar-fill" style="width:48.9%;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)">628</div></div><span class="bar-val">628</span></div>
+      <div class="bar-row"><span class="bar-label">5/12</span><div class="bar-track"><div class="bar-fill" style="width:76.1%;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)">976</div></div><span class="bar-val">976</span></div>
+      <div class="bar-row"><span class="bar-label">5/13</span><div class="bar-track"><div class="bar-fill" style="width:28.7%;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)">368</div></div><span class="bar-val">368</span></div>
+      <div class="bar-row"><span class="bar-label" style="color:var(--dim)">5/14</span><div class="bar-track"><div class="bar-fill" style="width:2%;background:var(--dim)"></div></div><span class="bar-val" style="color:var(--dim)">-</span></div>
+      <div class="bar-row"><span class="bar-label">5/15</span><div class="bar-track"><div class="bar-fill" style="width:18.5%;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)">238</div></div><span class="bar-val">238</span></div>
+      <div class="bar-row"><span class="bar-label">5/16</span><div class="bar-track"><div class="bar-fill" style="width:18.8%;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)">241</div></div><span class="bar-val">241</span></div>
+      <div class="bar-row"><span class="bar-label" style="color:var(--yellow)">5/17</span><div class="bar-track"><div class="bar-fill" style="width:2%;background:var(--yellow)"></div></div><span class="bar-val">10</span></div>
+      <div class="bar-row"><span class="bar-label" style="color:var(--yellow)">5/18</span><div class="bar-track"><div class="bar-fill" style="width:4%;background:var(--yellow)">51</div></div><span class="bar-val">51</span></div>
+      <div class="bar-row"><span class="bar-label" style="color:var(--yellow)">5/19</span><div class="bar-track"><div class="bar-fill" style="width:1%;background:var(--yellow)"></div></div><span class="bar-val">4</span></div>
+      <div class="bar-row"><span class="bar-label" style="color:var(--yellow)">5/20</span><div class="bar-track"><div class="bar-fill" style="width:2.3%;background:var(--yellow)">30</div></div><span class="bar-val">30</span></div>
+      <div class="bar-row"><span class="bar-label" style="color:var(--yellow)">5/21</span><div class="bar-track"><div class="bar-fill" style="width:1%;background:var(--yellow)"></div></div><span class="bar-val">1</span></div>
+      <div class="bar-row"><span class="bar-label" style="color:var(--yellow)">5/22</span><div class="bar-track"><div class="bar-fill" style="width:2.4%;background:var(--yellow)">31</div></div><span class="bar-val">31</span></div>
+      <div class="bar-row"><span class="bar-label" style="color:var(--dim)">5/23</span><div class="bar-track"><div class="bar-fill" style="width:2%;background:var(--dim)"></div></div><span class="bar-val" style="color:var(--dim)">-</span></div>
+      <div class="bar-row"><span class="bar-label">5/24</span><div class="bar-track"><div class="bar-fill" style="width:23.3%;background:linear-gradient(90deg,#bbf7d0,#d9f99d)">299</div></div><span class="bar-val">299</span></div>
+      <div class="bar-row"><span class="bar-label">5/25</span><div class="bar-track"><div class="bar-fill" style="width:28.4%;background:linear-gradient(90deg,#bbf7d0,#d9f99d)">364</div></div><span class="bar-val">364</span></div>
+      <div class="bar-row"><span class="bar-label">5/26</span><div class="bar-track"><div class="bar-fill" style="width:20.2%;background:linear-gradient(90deg,#bbf7d0,#d9f99d)">259</div></div><span class="bar-val">259</span></div>
+      <div class="bar-row"><span class="bar-label">5/27</span><div class="bar-track"><div class="bar-fill" style="width:19.4%;background:linear-gradient(90deg,#bbf7d0,#d9f99d)">249</div></div><span class="bar-val">249</span></div>
+      <div class="bar-row"><span class="bar-label">5/28</span><div class="bar-track"><div class="bar-fill" style="width:47.2%;background:linear-gradient(90deg,#bbf7d0,#d9f99d)">605</div></div><span class="bar-val">605</span></div>
+      <div class="bar-row"><span class="bar-label">5/29</span><div class="bar-track"><div class="bar-fill" style="width:5.1%;background:linear-gradient(90deg,#bbf7d0,#d9f99d)">66</div></div><span class="bar-val">66</span></div>
+      <div class="bar-row"><span class="bar-label">5/30</span><div class="bar-track"><div class="bar-fill" style="width:18.6%;background:linear-gradient(90deg,#bbf7d0,#d9f99d)">239</div></div><span class="bar-val">239</span></div>
+      <div class="bar-row"><span class="bar-label">5/31</span><div class="bar-track"><div class="bar-fill" style="width:20.1%;background:linear-gradient(90deg,#bbf7d0,#d9f99d)">258</div></div><span class="bar-val">258</span></div>
+      <div class="bar-row"><span class="bar-label">6/01</span><div class="bar-track"><div class="bar-fill" style="width:12.1%;background:linear-gradient(90deg,#a5f3fc,#99f6e4)">155</div></div><span class="bar-val">155</span></div>
+      <div class="bar-row"><span class="bar-label">6/02</span><div class="bar-track"><div class="bar-fill" style="width:26.2%;background:linear-gradient(90deg,#a5f3fc,#99f6e4)">336</div></div><span class="bar-val">336</span></div>
+      <div class="bar-row"><span class="bar-label">6/03</span><div class="bar-track"><div class="bar-fill" style="width:6.2%;background:linear-gradient(90deg,#a5f3fc,#99f6e4)">79</div></div><span class="bar-val">79</span></div>
+      <div class="bar-row"><span class="bar-label">6/04</span><div class="bar-track"><div class="bar-fill" style="width:55%;background:linear-gradient(90deg,#a5f3fc,#99f6e4)">705</div></div><span class="bar-val">705</span></div>
+      <div class="bar-row"><span class="bar-label">6/05</span><div class="bar-track"><div class="bar-fill" style="width:7.4%;background:linear-gradient(90deg,#a5f3fc,#99f6e4)">95</div></div><span class="bar-val">95</span></div>
+      <div class="bar-row"><span class="bar-label" style="color:var(--dim)">6/06</span><div class="bar-track"><div class="bar-fill" style="width:1%;background:var(--dim)"></div></div><span class="bar-val">2</span></div>
+      <div class="bar-row"><span class="bar-label">6/07</span><div class="bar-track"><div class="bar-fill" style="width:57.2%;background:linear-gradient(90deg,#a5f3fc,#99f6e4)">733</div></div><span class="bar-val">733</span></div>
+    </div>
+    <div style="margin-top:12px;font-size:.7rem;color:var(--dim)">
+      <span style="color:var(--accent)">■</span> 初建期 &nbsp;
+      <span style="color:#c7d2fe">■</span> 密集开发 &nbsp;
+      <span style="color:var(--yellow)">■</span> 软考备考 &nbsp;
+      <span style="color:#bbf7d0">■</span> 平衡发展
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Weekly Trend -->
+    <div class="card">
+      <div class="card-head"><div class="icon" style="background:rgba(6,182,212,.1)">&#128200;</div><h3>每周趋势</h3></div>
+      <table class="data-table">
+        <thead><tr><th>周次</th><th>观察数</th><th>会话</th><th>日均</th></tr></thead>
+        <tbody>
+          <tr><td>W18 (5/7-13)</td><td><b>2,601</b></td><td>386</td><td>433</td></tr>
+          <tr><td>W19 (5/14-20)</td><td><b>2,461</b></td><td>223</td><td>410</td></tr>
+          <tr><td>W20 (5/21-27)</td><td><b>416</b></td><td>55</td><td>69</td></tr>
+          <tr><td>W21 (5/28-6/3)</td><td><b>2,040</b></td><td>306</td><td>340</td></tr>
+          <tr><td>W22 (6/4-7)</td><td><b>2,105</b></td><td>186</td><td>526</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Peak Hours -->
+    <div class="card">
+      <div class="card-head"><div class="icon" style="background:rgba(234,88,12,.1)">&#128336;</div><h3>活跃时段 (GMT+8)</h3></div>
+      <table class="data-table">
+        <thead><tr><th>排名</th><th>时段</th><th>观察数</th><th>占比</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><b>22:00-23:00</b></td><td>1,408</td><td>14.6%</td></tr>
+          <tr><td>2</td><td><b>17:00-18:00</b></td><td>1,224</td><td>12.7%</td></tr>
+          <tr><td>3</td><td>08:00-09:00</td><td>662</td><td>6.9%</td></tr>
+          <tr><td>4</td><td>14:00-15:00</td><td>629</td><td>6.5%</td></tr>
+          <tr><td>5</td><td>13:00-14:00</td><td>621</td><td>6.5%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Type Distribution -->
+  <div class="card">
+    <div class="card-head"><div class="icon" style="background:rgba(124,58,237,.1)">&#128295;</div><h3>观察类型分布</h3></div>
+    <div class="grid-3">
+      <div style="text-align:center;padding:16px"><div style="font-size:2.2rem;font-weight:900;color:var(--accent)">38.7%</div><div style="font-size:.75rem;color:var(--muted)">discovery (3,721)</div></div>
+      <div style="text-align:center;padding:16px"><div style="font-size:2.2rem;font-weight:900;color:var(--red)">25.0%</div><div style="font-size:.75rem;color:var(--muted)">bugfix (2,407)</div></div>
+      <div style="text-align:center;padding:16px"><div style="font-size:2.2rem;font-weight:900;color:var(--blue)">16.0%</div><div style="font-size:.75rem;color:var(--muted)">feature (1,541)</div></div>
+      <div style="text-align:center;padding:16px"><div style="font-size:2.2rem;font-weight:900;color:var(--cyan)">16.1%</div><div style="font-size:.75rem;color:var(--muted)">change (1,547)</div></div>
+      <div style="text-align:center;padding:16px"><div style="font-size:2.2rem;font-weight:900;color:var(--yellow)">2.3%</div><div style="font-size:.75rem;color:var(--muted)">decision (219)</div></div>
+      <div style="text-align:center;padding:16px"><div style="font-size:2.2rem;font-weight:900;color:var(--green)">1.9%</div><div style="font-size:.75rem;color:var(--muted)">refactor (181)</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PHASES ==================== -->
+<div class="section" id="phases">
+  <div class="section-title">时间线四阶段</div>
+  <div class="section-desc">从爆发式启动到稳态并行的四个阶段</div>
+
+  <div class="phase-timeline">
+    <!-- Phase 1 -->
+    <div class="phase-node">
+      <div class="phase-header">
+        <span class="phase-tag" style="background:rgba(79,70,229,.12);color:var(--accent)">PHASE 1</span>
+        <span class="phase-name">初建期</span>
+        <span class="phase-meta">5/7 — 5/10 &nbsp;|&nbsp; 2,601 条 &nbsp;|&nbsp; 日均 650</span>
+      </div>
+      <div class="card feature-card">
+        <div class="card-body" style="font-size:.85rem;color:var(--muted);line-height:1.9">
+          <b style="color:var(--text)">爆发式启动。</b>Claude-Mem 初始化配置（5/7），讯飞 API 验证与功能恢复（5/8），首次数据丢失事件及恢复——72 stubs + 13.5h 缺口，使用 inject-transcript.py 注入 383 条工具调用（5/9）。5/10 为全月峰值日（1,283 条），完成 AI 视频笔记 V2.0（3,960 行代码）和 daily-log 技能 v2.0.0 发布。<br>
+          <b style="color:var(--text)">里程碑：</b>Claude-Mem 基础架构搭建完成 · 首次数据恢复 · daily-log v1.0→v2.1 快速迭代
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="phase-node">
+      <div class="phase-header">
+        <span class="phase-tag" style="background:rgba(124,58,237,.12);color:var(--accent2)">PHASE 2</span>
+        <span class="phase-name">密集开发期</span>
+        <span class="phase-meta">5/11 — 5/16 &nbsp;|&nbsp; 2,452 条 &nbsp;|&nbsp; 日均 490</span>
+      </div>
+      <div class="card feature-card">
+        <div class="card-body" style="font-size:.85rem;color:var(--muted);line-height:1.9">
+          <b style="color:var(--text)">多项目并行。</b>AI 视频笔记前端集成与字幕优化（5/11），AI 实验室管理系统全自主执行（5/12），Worker 端口迁移解决 Windows 端口僵尸（5/13），远程 Claude-Mem 配置审计（5/15），智能车技术报告下载（5/16）。5/14 无数据。<br>
+          <b style="color:var(--text)">里程碑：</b>多项目并行开发模式建立 · 远程配置能力验证 · 架构文档完善
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="phase-node">
+      <div class="phase-header">
+        <span class="phase-tag" style="background:rgba(202,138,4,.12);color:var(--yellow)">PHASE 3</span>
+        <span class="phase-name">软考备考期</span>
+        <span class="phase-meta">5/17 — 5/22 &nbsp;|&nbsp; 127 条 &nbsp;|&nbsp; 日均 21</span>
+      </div>
+      <div class="card" style="border-left:3px solid var(--yellow)">
+        <div class="card-body" style="font-size:.85rem;color:var(--muted);line-height:1.9">
+          <b style="color:var(--text)">安静期。</b>聚焦软考备考，开发活动降至最低。网络知识复习（5/17），校长奖学金材料撰写（5/18），浮点数/指令周期/ELF 分段学习（5/19），PV 操作与 2021 真题（5/20），IMA 知识库部署（5/22）。<br>
+          <b style="color:var(--text)">里程碑：</b>校长奖学金材料提交 · 软考错题本系统化 · IMA 知识库云端部署
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="phase-node">
+      <div class="phase-header">
+        <span class="phase-tag" style="background:rgba(22,163,74,.12);color:var(--green)">PHASE 4</span>
+        <span class="phase-name">平衡发展期</span>
+        <span class="phase-meta">5/23 — 6/7 &nbsp;|&nbsp; 4,443 条 &nbsp;|&nbsp; 日均 278</span>
+      </div>
+      <div class="card fix-card">
+        <div class="card-body" style="font-size:.85rem;color:var(--muted);line-height:1.9">
+          <b style="color:var(--text)">全面平衡。</b>Claude-Mem 深夜修复——DeepSeek API 切换 + Chroma 补丁（5/24），GLM-4-flash 配置与 Tier Routing 分析（5/25），智能车代码重构与 CLAUDE.md 文档化（5/26-28），AI 知识图谱项目启动（6/1），标签规范化（6/4），Codex 迁移准备（6/6），月度报告生成（6/7）。<br>
+          <b style="color:var(--text)">里程碑：</b>多项目平衡模式成熟 · AI 知识图谱 0→1 · 日志体系全自动化
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PROJECTS ==================== -->
+<div class="section" id="projects">
+  <div class="section-title">项目全景</div>
+  <div class="section-desc">16 个项目，6 大类别，Top 5 深度分析</div>
+
+  <!-- Category overview -->
+  <div class="card">
+    <div class="card-head"><div class="icon" style="background:rgba(79,70,229,.1)">&#128208;</div><h3>项目分类</h3></div>
+    <table class="data-table">
+      <thead><tr><th>类别</th><th>项目</th><th>观察数</th><th>占比</th></tr></thead>
+      <tbody>
+        <tr><td><b>AI 开发工具</b></td><td>AI视频笔记 + AI知识图谱</td><td>4,009</td><td>41.7%</td></tr>
+        <tr><td><b>工具运维</b></td><td>Obsidian知识库</td><td>2,716</td><td>28.2%</td></tr>
+        <tr><td><b>竞赛科研</b></td><td>智能车 + 智慧物流等 5 项</td><td>1,517</td><td>15.8%</td></tr>
+        <tr><td><b>学习考试</b></td><td>AI学习工程</td><td>814</td><td>8.5%</td></tr>
+        <tr><td><b>实验室管理</b></td><td>AI实验室管理系统</td><td>445</td><td>4.6%</td></tr>
+        <tr><td><b>协作项目</b></td><td>EIDE-LDH + 鹏鼎智控等</td><td>114</td><td>1.2%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Top 5 donut -->
+  <div class="card">
+    <div class="card-head"><div class="icon" style="background:rgba(124,58,237,.1)">&#127919;</div><h3>Top 5 项目投入分布</h3></div>
+    <div class="donut-wrap">
+      <div class="donut">
+        <svg viewBox="0 0 36 36">
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="37.9 62.1" stroke-dashoffset="0"/>
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent2)" stroke-width="3" stroke-dasharray="28.2 71.8" stroke-dashoffset="-37.9"/>
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--blue)" stroke-width="3" stroke-dasharray="13.1 86.9" stroke-dashoffset="-66.1"/>
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--cyan)" stroke-width="3" stroke-dasharray="8.5 91.5" stroke-dashoffset="-79.2"/>
+          <circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--green)" stroke-width="3" stroke-dasharray="4.6 95.4" stroke-dashoffset="-87.7"/>
+        </svg>
+        <div class="donut-center"><span class="big">9,623</span><span class="small">总观察</span></div>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span><span><b>AI视频笔记</b> — 3,646 (37.9%)</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent2)"></span><span><b>Obsidian知识库</b> — 2,716 (28.2%)</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span><span><b>2026智能车</b> — 1,256 (13.1%)</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--cyan)"></span><span><b>AI学习工程</b> — 814 (8.5%)</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--green)"></span><span><b>AI实验室管理</b> — 445 (4.6%)</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--dim)"></span><span>其他 11 项 — 746 (7.7%)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top 5 Deep Dives -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head"><div class="icon" style="background:rgba(79,70,229,.1)">&#127909;</div><h3>AI视频笔记</h3><span class="badge" style="background:var(--accent);color:#fff">3,646</span></div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.8">
+        <b style="color:var(--text)">定位：</b>AI 驱动的视频笔记生成工具<br>
+        <b style="color:var(--text)">技术栈：</b>Python (FastAPI) + Vue.js + Playwright + BBDown<br>
+        <b style="color:var(--text)">里程碑：</b>V2.0 完成（3,960 行）· SRT 解析器 · Seafile API 集成 · 知识图谱 Dashboard<br>
+        <b style="color:var(--text)">决策：</b>100 个
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="icon" style="background:rgba(124,58,237,.1)">&#128218;</div><h3>Obsidian知识库</h3><span class="badge" style="background:var(--accent2);color:#fff">2,716</span></div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.8">
+        <b style="color:var(--text)">定位：</b>个人知识库管理与 Claude-Mem 工具运维<br>
+        <b style="color:var(--text)">技术栈：</b>Markdown + YAML + Claude-Mem + MCP + PowerShell<br>
+        <b style="color:var(--text)">里程碑：</b>Claude-Mem 初始化 · 数据恢复 · daily-log 发布 · DeepSeek 切换 · 标签规范化<br>
+        <b style="color:var(--text)">决策：</b>62 个
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="icon" style="background:rgba(37,99,235,.1)">&#128663;</div><h3>2026智能车</h3><span class="badge" style="background:var(--blue);color:#fff">1,256</span></div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.8">
+        <b style="color:var(--text)">定位：</b>第 21 届智能汽车竞赛"雁过留痕"赛道<br>
+        <b style="color:var(--text)">技术栈：</b>C/C++ + STM32 + EIDE + Git<br>
+        <b style="color:var(--text)">里程碑：</b>CLAUDE.md 重构 · 代码重构 · P0 模块封装 · MW 层开发<br>
+        <b style="color:var(--text)">决策：</b>23 个
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="icon" style="background:rgba(8,145,178,.1)">&#128214;</div><h3>AI学习工程</h3><span class="badge" style="background:var(--cyan);color:#fff">814</span></div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.8">
+        <b style="color:var(--text)">定位：</b>学习资源整合与奖学金申请<br>
+        <b style="color:var(--text)">技术栈：</b>Markdown + WPS JS + Claude-Mem + MCP<br>
+        <b style="color:var(--text)">里程碑：</b>校长奖学金材料 · 远程配置审计 · Codex 迁移准备<br>
+        <b style="color:var(--text)">决策：</b>9 个
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DECISIONS ==================== -->
+<div class="section" id="decisions">
+  <div class="section-title">关键决策汇编</div>
+  <div class="section-desc">首月共记录 219 条决策，按项目分布</div>
+
+  <div class="card">
+    <table class="data-table">
+      <thead><tr><th>项目</th><th>决策数</th><th>代表决策</th></tr></thead>
+      <tbody>
+        <tr><td><b>AI视频笔记</b></td><td>100</td><td>SRT 繁简转换 · V2.0 架构 · Seafile API 集成</td></tr>
+        <tr><td><b>Obsidian知识库</b></td><td>62</td><td>Claude-Mem 初始化 · daily-log 架构 · DeepSeek 切换</td></tr>
+        <tr><td><b>2026智能车</b></td><td>23</td><td>CLAUDE.md 重构 · 代码重构策略 · Git 提交决策</td></tr>
+        <tr><td><b>AI实验室管理</b></td><td>16</td><td>全自主执行 · 独立 AI 分析表 · kdocs 集成</td></tr>
+        <tr><td><b>AI学习工程</b></td><td>9</td><td>奖学金材料策略 · 远程配置审计 · Codex 迁移</td></tr>
+        <tr><td><b>EIDE-LDH</b></td><td>5</td><td>项目初始化 · 本地 Git 仓库策略</td></tr>
+        <tr><td><b>其他</b></td><td>4</td><td>智慧物流 · 项目迁移规划</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== BUGS ==================== -->
+<div class="section" id="bugs">
+  <div class="section-title">Bug 与踩坑汇编</div>
+  <div class="section-desc">2,407 条 bugfix 记录中的 Top 5 影响力事件</div>
+
+  <div class="card">
+    <div class="card-head"><div class="icon" style="background:rgba(220,38,38,.1)">&#128027;</div><h3>Bug 分布（采样 480 条）</h3></div>
+    <div class="bar-chart" style="margin-bottom:8px">
+      <div class="bar-row"><span class="bar-label" style="width:140px">AI视频笔记</span><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--red);opacity:.7">287</div></div><span class="bar-val">287</span></div>
+      <div class="bar-row"><span class="bar-label" style="width:140px">Obsidian知识库</span><div class="bar-track"><div class="bar-fill" style="width:17%;background:var(--red);opacity:.6">81</div></div><span class="bar-val">81</span></div>
+      <div class="bar-row"><span class="bar-label" style="width:140px">2026智能车</span><div class="bar-track"><div class="bar-fill" style="width:11%;background:var(--red);opacity:.5">51</div></div><span class="bar-val">51</span></div>
+      <div class="bar-row"><span class="bar-label" style="width:140px">AI实验室管理</span><div class="bar-track"><div class="bar-fill" style="width:5%;background:var(--red);opacity:.4">25</div></div><span class="bar-val">25</span></div>
+      <div class="bar-row"><span class="bar-label" style="width:140px">AI学习工程</span><div class="bar-track"><div class="bar-fill" style="width:4%;background:var(--red);opacity:.3">17</div></div><span class="bar-val">17</span></div>
+    </div>
+  </div>
+
+  <div class="card bug-card">
+    <div class="card-head"><div class="icon" style="background:rgba(220,38,38,.1)">&#128165;</div><h3>Top 5 影响力 Bug</h3></div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>事件</th><th>日期</th><th>根因</th><th>修复</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>Claude-Mem 数据丢失</b></td><td>5/9</td><td>Worker 崩溃未自动重启</td><td>inject-transcript.py + 三项永久修复</td></tr>
+        <tr><td>2</td><td><b>Windows 端口僵尸</b></td><td>5/13</td><td>bun 强杀后 CLOSE_WAIT</td><td>端口迁移 37781→37782</td></tr>
+        <tr><td>3</td><td><b>Chroma 连接失败</b></td><td>5/24</td><td>cmd.exe uvx spawn 不兼容</td><td>patch-chroma-bash.py 补丁</td></tr>
+        <tr><td>4</td><td><b>LLM 总结失效</b></td><td>5/24</td><td>原模型 API 不可用</td><td>切换 DeepSeek API</td></tr>
+        <tr><td>5</td><td><b>百度搜索不可用</b></td><td>5/24</td><td>API Key 未配置</td><td>配置 BCE API Key</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== TOOLS ==================== -->
+<div class="section" id="tools">
+  <div class="section-title">工具进化</div>
+  <div class="section-desc">Claude-Mem、daily-log、Codex 三大工具的演进历程</div>
+
+  <div class="card">
+    <div class="card-head"><div class="icon" style="background:rgba(79,70,229,.1)">&#128295;</div><h3>Claude-Mem 演进时间线</h3></div>
+    <table class="data-table">
+      <thead><tr><th>日期</th><th>里程碑</th><th>详情</th></tr></thead>
+      <tbody>
+        <tr><td>5/7</td><td><b>初始化配置</b></td><td>讯飞 API 验证，Worker 健康检查</td></tr>
+        <tr><td>5/9</td><td><b>数据丢失与恢复</b></td><td>72 stubs + 13.5h 缺口，inject-transcript.py 恢复</td></tr>
+        <tr><td>5/10</td><td><b>daily-log v2.0.0</b></td><td>6 阶段自适应工作流，增量缓存，token 降低 50-70%</td></tr>
+        <tr><td>5/13</td><td><b>架构深化</b></td><td>端口迁移，架构文档更新 434→611 行</td></tr>
+        <tr><td>5/24</td><td><b>深夜修复</b></td><td>DeepSeek API 切换，Chroma 补丁，百度搜索配置</td></tr>
+        <tr><td>5/25</td><td><b>模型优化</b></td><td>GLM-4-flash 配置，Tier Routing 机制分析</td></tr>
+        <tr><td>6/6</td><td><b>Codex 迁移</b></td><td>Codex CLI 全面配置，迁移验证通过</td></tr>
+        <tr><td>6/7</td><td><b>月度报告</b></td><td>数据提取脚本，自动化报告流程</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="icon" style="background:rgba(6,182,212,.1)">&#128221;</div><h3>daily-log 技能演进</h3></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px;padding:12px;background:rgba(79,70,229,.04);border-radius:10px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:800;color:var(--accent)">v1.0</div>
+        <div style="font-size:.7rem;color:var(--muted)">5/10 · 基础 6 阶段工作流</div>
+      </div>
+      <div style="flex:1;min-width:200px;padding:12px;background:rgba(124,58,237,.04);border-radius:10px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:800;color:var(--accent2)">v2.0.0</div>
+        <div style="font-size:.7rem;color:var(--muted)">5/10 · Data Portrait + 并行查询</div>
+      </div>
+      <div style="flex:1;min-width:200px;padding:12px;background:rgba(6,182,212,.04);border-radius:10px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:800;color:var(--accent3)">v2.1.0</div>
+        <div style="font-size:.7rem;color:var(--muted)">5/10 · 增量缓存 · token -50~70%</div>
+      </div>
+      <div style="flex:1;min-width:200px;padding:12px;background:rgba(22,163,74,.04);border-radius:10px;text-align:center">
+        <div style="font-size:1.2rem;font-weight:800;color:var(--green)">v2.4.0</div>
+        <div style="font-size:.7rem;color:var(--muted)">6/7 · 并行 Agent 生成 · 月度报告</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== INSIGHTS ==================== -->
+<div class="section" id="insights">
+  <div class="section-title">首月洞察</div>
+  <div class="section-desc">工作模式、投入分布与效率指标</div>
+
+  <div class="grid-3">
+    <div class="card" style="text-align:center">
+      <div style="font-size:2.2rem;font-weight:900;color:var(--accent)">320.8</div>
+      <div style="font-size:.75rem;color:var(--muted)">日均观察记录</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:2.2rem;font-weight:900;color:var(--accent2)">53.9</div>
+      <div style="font-size:.75rem;color:var(--muted)">会话/项目</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:2.2rem;font-weight:900;color:var(--accent3)">11.1</div>
+      <div style="font-size:.75rem;color:var(--muted)">观察/会话</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div class="icon" style="background:rgba(79,70,229,.1)">&#128161;</div><h3>工作模式总结</h3></div>
+    <div style="font-size:.85rem;color:var(--muted);line-height:2">
+      <b style="color:var(--text)">高峰时段：</b>晚间 22:00-23:00（14.6%）和下午 17:00-18:00（12.7%）——典型的"课后+晚间"工作节奏<br>
+      <b style="color:var(--text)">最忙碌日：</b>5/10（1,283 条）—— AI 视频笔记 V2.0 完成 + daily-log v2.0.0 发布，15 小时高强度工作<br>
+      <b style="color:var(--text)">安静期：</b>5/17-5/22（日均 21 条）—— 软考备考期，以知识积累为主<br>
+      <b style="color:var(--text)">工作模式：</b>多项目并行开发，AI 视频笔记和 Obsidian 知识库为核心项目（占 66%），竞赛和学习项目为辅<br>
+      <b style="color:var(--text)">决策密度：</b>2.3%（219/9,623）—— 每 44 条观察产生 1 个决策，说明工作以探索和修复为主
+    </div>
+  </div>
+</div>
+
+<!-- ==================== NEXT STEPS ==================== -->
+<div class="section" id="next">
+  <div class="section-title">下一步建议</div>
+  <div class="section-desc">基于 863 条会话摘要中 next_steps 字段的高频主题</div>
+
+  <div style="counter-reset:step">
+    <div class="card feature-card" style="counter-increment:step">
+      <div class="card-head"><div class="icon" style="background:rgba(37,99,235,.1)">&#127909;</div><h3>AI 视频笔记</h3></div>
+      <div style="font-size:.85rem;color:var(--muted)">完成 Douyin_TikTok_Download_API 集成调研，提升抖音视频下载能力</div>
+    </div>
+    <div class="card feature-card">
+      <div class="card-head"><div class="icon" style="background:rgba(79,70,229,.1)">&#128295;</div><h3>Claude-Mem 工具</h3></div>
+      <div style="font-size:.85rem;color:var(--muted)">实施 Tier Routing 机制，优化多模型调度成本</div>
+    </div>
+    <div class="card feature-card">
+      <div class="card-head"><div class="icon" style="background:rgba(37,99,235,.1)">&#128663;</div><h3>2026智能车</h3></div>
+      <div style="font-size:.85rem;color:var(--muted)">完成 P0 模块封装（camera, encoder, IMU），启动 MW 层业务逻辑开发</div>
+    </div>
+    <div class="card feature-card">
+      <div class="card-head"><div class="icon" style="background:rgba(8,145,178,.1)">&#128214;</div><h3>AI学习工程</h3></div>
+      <div style="font-size:.85rem;color:var(--muted)">完成 Codex 迁移，保持工具链多样性</div>
+    </div>
+    <div class="card feature-card">
+      <div class="card-head"><div class="icon" style="background:rgba(22,163,74,.1)">&#128202;</div><h3>AI实验室管理系统</h3></div>
+      <div style="font-size:.85rem;color:var(--muted)">设计 Dashboard 可视化界面，提升打卡数据分析效率</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p>数据来源：Claude-Mem 跨会话持久记忆（SQLite 直查） · 9,623 observations · 863 session_summaries</p>
+  <p style="margin-top:4px">生成时间：2026-06-07 16:00 GMT+8 · daily-log v2.4.0</p>
+</div>
+
+</div><!-- /page -->
+
+<!-- SCROLL SPY -->
+<script>
+const links=document.querySelectorAll('.nav-link');
+const sections=[...links].map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      links.forEach(l=>l.classList.remove('active'));
+      const a=document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+      if(a)a.classList.add('active');
+    }
+  });
+},{rootMargin:'-80px 0px -60% 0px'});
+sections.forEach(s=>io.observe(s));
+</script>
+
+</body>
+</html>

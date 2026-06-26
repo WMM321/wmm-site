@@ -1,4 +1,8 @@
-# CLAUDE.md — WMM 个人网站项目
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# WMM 个人网站项目
 
 ## 项目概述
 
@@ -20,9 +24,10 @@ wmm-site/
 │   ├── config.ts          ← 站点配置（标题/导航/个人信息）
 │   └── styles/            ← 样式文件
 ├── public/
-│   ├── images/            ← 全站共用图片
 │   └── reports/           ← HTML 附件（可被 iframe 嵌入）
-├── docs/                  ← 项目文档
+├── docs/                  ← 设计文档与使用指南（中文命名，供人审阅）
+├── scripts/               ← 工具脚本（草稿箱管理、新建文章）
+├── 草稿箱/                ← 文章草稿工作区（Obsidian 中审阅修改）
 ├── .obsidian/             ← Obsidian 配置（已 gitignore）
 └── dist/                  ← 构建输出（已 gitignore）
 ```
@@ -59,6 +64,7 @@ src/content/posts/
 src/content/posts/
 └── ai-memory-system-30-days/   ← slug: ai-memory-system-30-days
     ├── index.md                ← 文章正文（必须命名为 index.md）
+    ├── 01-hero-overview.png    ← 文章配图（用相对路径引用）
     ├── 2026-05月度报告.html    ← 附件（月度报告、交互页面等）
     └── ...                     ← 其他附件
 ```
@@ -87,7 +93,7 @@ source_platform: ""
 
 | 附件类型 | 存放位置 | 在文章中的引用方式 |
 |----------|----------|-------------------|
-| 文章配图 | `public/images/blog/` | `![](/images/blog/xxx.png)` |
+| 文章配图 | 文章文件夹内（同 `index.md` 同级） | `![](./xxx.png)` |
 | HTML 报告/交互页面 | 文章文件夹 + `public/reports/`（两份） | `<iframe src="/reports/xxx.html">` |
 | 普通下载文件 | 文章文件夹 | `[下载](/reports/xxx.pdf)` |
 
@@ -128,9 +134,18 @@ Claude 是执行者，负责：
 2. Claude 执行代码修改、构建、部署
 3. 验证线上效果
 
+## 架构说明
+
+- **内容管线:** `src/content/config.ts` 定义 schema → `src/content/posts/` 存放文章 → `src/pages/posts/[...slug].astro` 生成静态页面
+- **两个 content collection:** `posts`（文章，有完整 schema）和 `spec`（仅 `about.md`，无 schema 约束）
+- **路由:** 文件式路由，`[...slug].astro` 捕获所有文章路径，`[...page].astro` 处理分页
+- **图片处理:** 文章文件夹内的图片用相对路径 `![](./xxx.png)`，Astro 自动处理；`public/` 下的静态文件直接按原路径输出
+
 ## 注意事项
 
 - 使用 pnpm，不要用 npm
 - `.obsidian/` 目录已 gitignore，不会污染仓库
+- `草稿箱/*.md` 已 gitignore，草稿内容仅本地可见（`.gitkeep` 保底）
 - 修改 `src/config.ts` 可以改站点标题、导航、个人信息
 - 修改 `src/content/config.ts` 可以改文章 schema
+- `草稿箱/` 是 Obsidian 工作区，供人审阅修改；`src/content/posts/` 是网站正式内容
