@@ -36,3 +36,9 @@ yarn.lock
 # 草稿箱机制
 草稿箱/*.md
 !草稿箱/.gitkeep
+
+# 旧版项目副本（已迁移到根目录，独立 git 仓库）
+wmm-site/
+
+# AI tool session data
+.claudian/
